@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR || LiveScriptReload_Enabled
+#if UNITY_EDITOR || LiveScriptReload_Enabled
 
 using System;
 using System.Collections.Generic;
@@ -136,6 +136,130 @@ namespace FastScriptReload.Runtime
             }
         }
         
+        /// <summary>
+        /// P0-60 exact-target overload: applies exactly one already-admitted
+        /// method from <paramref name="dynamicallyLoadedAssemblyWithUpdates"/>
+        /// onto <paramref name="exactExistingMethodToUpdate"/>, records every
+        /// other declared method on the matching created type as skipped
+        /// (never detoured), and deliberately bypasses both
+        /// OnScriptHotReload/OnScriptHotReloadNoInstance lifecycle callback
+        /// paths. The existing <see cref="DynamicallyUpdateMethodsForCreatedAssembly"/>
+        /// preserve-all overload above is completely unchanged by this
+        /// addition. See Plans/HotReload/V2/FSR-MVP-CLEAN/
+        /// 04-PARETO-COMPLETION-HANDOFF.md SS6 P0-60.
+        /// </summary>
+        public ExactTargetPatchResult DynamicallyUpdateSingleMethodForCreatedAssembly(
+            Assembly dynamicallyLoadedAssemblyWithUpdates, MethodBase exactExistingMethodToUpdate)
+        {
+            var resolution = ResolveExactTarget(dynamicallyLoadedAssemblyWithUpdates, exactExistingMethodToUpdate);
+            if (resolution.FailureReason != null)
+            {
+                return ExactTargetPatchResult.Failed(resolution.FailureReason);
+            }
+
+            try
+            {
+                LoggerScoped.LogDebug($"Trying to detour method (exact-target), from: '{exactExistingMethodToUpdate.ResolveFullName()}' to: '{resolution.CreatedMethod.ResolveFullName()}'");
+                DetourCrashHandler.LogDetour(exactExistingMethodToUpdate.ResolveFullName());
+                Memory.DetourMethod(exactExistingMethodToUpdate, resolution.CreatedMethod);
+            }
+            catch (Exception)
+            {
+                return ExactTargetPatchResult.Failed("detour-exception");
+            }
+            finally
+            {
+                DetourCrashHandler.ClearDetourLog();
+            }
+
+            // Deliberately does not call FindAndExecuteStaticOnScriptHotReloadNoInstance
+            // or FindAndExecuteOnScriptHotReload: the exact-target path bypasses
+            // both lifecycle callback paths (P0-60 RED).
+            return ExactTargetPatchResult.Succeeded(resolution.TargetIdentity, resolution.SkippedIdentities);
+        }
+
+        /// <summary>
+        /// Pure selection step for the exact-target overload above: finds
+        /// the one created method matching <paramref name="exactExistingMethodToUpdate"/>'s
+        /// identity and records every sibling declared method as skipped,
+        /// without ever calling Memory.DetourMethod. Kept separate so this
+        /// selection/rejection logic is exercisable offline (see
+        /// qualification/ExactTargetLoaderHarness.cs) without invoking a
+        /// real Harmony detour outside Unity's own runtime.
+        /// </summary>
+        internal static ExactTargetResolution ResolveExactTarget(
+            Assembly dynamicallyLoadedAssemblyWithUpdates, MethodBase exactExistingMethodToUpdate)
+        {
+            if (dynamicallyLoadedAssemblyWithUpdates == null || exactExistingMethodToUpdate == null)
+            {
+                return ExactTargetResolution.Failed("null-argument");
+            }
+
+            var existingDeclaringType = exactExistingMethodToUpdate.DeclaringType;
+            if (existingDeclaringType == null)
+            {
+                return ExactTargetResolution.Failed("no-declaring-type");
+            }
+
+            // Checked before any type-name search: generic type FullName
+            // matching across two independently loaded assemblies is not
+            // reliable (assembly-qualified generic-argument text can differ
+            // even for the "same" closed type), and generic types/methods
+            // are out of the hard body-only scope anyway (SS1.2) -- reject
+            // up front rather than attempt a fragile match.
+            if (existingDeclaringType.IsGenericType)
+            {
+                return ExactTargetResolution.Failed("generic-type");
+            }
+
+            var existingTypeFullName = existingDeclaringType.FullName;
+            var matchingCreatedTypes = dynamicallyLoadedAssemblyWithUpdates.GetTypes()
+                .Where(t => !t.IsGenericType && RemoveClassPostfix(t.FullName) == existingTypeFullName)
+                .ToList();
+
+            if (matchingCreatedTypes.Count == 0)
+            {
+                return ExactTargetResolution.Failed("created-type-not-found");
+            }
+            if (matchingCreatedTypes.Count > 1)
+            {
+                return ExactTargetResolution.Failed("created-type-ambiguous");
+            }
+
+            var createdType = matchingCreatedTypes[0];
+
+            var targetIdentity = ResolveMethodIdentity(exactExistingMethodToUpdate);
+            var declaredCreatedMethods = createdType.GetMethods(ALL_DECLARED_METHODS_BINDING_FLAGS)
+                .Where(m => !ExcludeMethodsDefinedOnTypes.Contains(m.DeclaringType))
+                .ToList();
+
+            var matches = declaredCreatedMethods
+                .Where(m => string.Equals(ResolveMethodIdentity(m), targetIdentity, StringComparison.Ordinal))
+                .ToList();
+
+            if (matches.Count == 0)
+            {
+                return ExactTargetResolution.Failed("created-method-not-found");
+            }
+            if (matches.Count > 1)
+            {
+                return ExactTargetResolution.Failed("created-method-ambiguous");
+            }
+
+            var createdTypeMethodToUpdate = matches[0];
+            if (exactExistingMethodToUpdate.IsGenericMethod || createdTypeMethodToUpdate.IsGenericMethod)
+            {
+                return ExactTargetResolution.Failed("generic-method");
+            }
+
+            var skippedIdentities = declaredCreatedMethods
+                .Where(m => m != createdTypeMethodToUpdate)
+                .Select(ResolveMethodIdentity)
+                .ToList();
+
+            return ExactTargetResolution.Resolved(createdTypeMethodToUpdate, targetIdentity, skippedIdentities);
+        }
+
         public Type GetRedirectedType(Type forExistingType)
         {
             return _existingTypeToRedirectedType[forExistingType];
@@ -262,6 +386,68 @@ namespace FastScriptReload.Runtime
     public interface IAssemblyChangesLoader
     {
         void DynamicallyUpdateMethodsForCreatedAssembly(Assembly dynamicallyLoadedAssemblyWithUpdates, AssemblyChangesLoaderEditorOptionsNeededInBuild editorOptions);
+    }
+
+    /// <summary>
+    /// Receipt of one <see cref="AssemblyChangesLoader.DynamicallyUpdateSingleMethodForCreatedAssembly"/>
+    /// call (P0-60). Never partially applied: either exactly one detour
+    /// happened (<see cref="Applied"/> true, <see cref="FailureReason"/>
+    /// null) or nothing happened (<see cref="Applied"/> false, a non-null
+    /// <see cref="FailureReason"/>). Missing/ambiguous/exception outcomes are
+    /// always failures here -- the caller (the Biome adapter) is responsible
+    /// for never treating a failure as a retryable state.
+    /// </summary>
+    public sealed class ExactTargetPatchResult
+    {
+        public bool Applied { get; }
+        public string AppliedMethodIdentity { get; }
+        public IReadOnlyList<string> SkippedMethodIdentities { get; }
+        public string FailureReason { get; }
+
+        private ExactTargetPatchResult(
+            bool applied, string appliedMethodIdentity, IReadOnlyList<string> skippedMethodIdentities, string failureReason)
+        {
+            Applied = applied;
+            AppliedMethodIdentity = appliedMethodIdentity;
+            SkippedMethodIdentities = skippedMethodIdentities ?? new List<string>();
+            FailureReason = failureReason;
+        }
+
+        public static ExactTargetPatchResult Succeeded(string appliedMethodIdentity, IReadOnlyList<string> skippedMethodIdentities) =>
+            new ExactTargetPatchResult(true, appliedMethodIdentity, skippedMethodIdentities, null);
+
+        public static ExactTargetPatchResult Failed(string reason) =>
+            new ExactTargetPatchResult(false, null, null, reason);
+    }
+
+    /// <summary>
+    /// Pure result of <see cref="AssemblyChangesLoader.ResolveExactTarget"/>:
+    /// either a resolved created method plus the identities of every sibling
+    /// declared method that will be skipped (never detoured), or a failure
+    /// reason. Never touches Memory.DetourMethod -- kept reflection-only so
+    /// it is safe and fully deterministic to exercise outside Unity.
+    /// </summary>
+    internal sealed class ExactTargetResolution
+    {
+        public MethodInfo CreatedMethod { get; }
+        public string TargetIdentity { get; }
+        public IReadOnlyList<string> SkippedIdentities { get; }
+        public string FailureReason { get; }
+
+        private ExactTargetResolution(
+            MethodInfo createdMethod, string targetIdentity, IReadOnlyList<string> skippedIdentities, string failureReason)
+        {
+            CreatedMethod = createdMethod;
+            TargetIdentity = targetIdentity;
+            SkippedIdentities = skippedIdentities ?? new List<string>();
+            FailureReason = failureReason;
+        }
+
+        public static ExactTargetResolution Resolved(MethodInfo createdMethod, string targetIdentity, IReadOnlyList<string> skippedIdentities) =>
+            new ExactTargetResolution(createdMethod, targetIdentity, skippedIdentities, null);
+
+        public static ExactTargetResolution Failed(string reason) =>
+            new ExactTargetResolution(null, null, null, reason);
     }
     
     [Serializable]

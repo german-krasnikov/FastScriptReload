@@ -1,0 +1,26 @@
+{
+    "name": "Biome.SourcePatch.FSRAdapter",
+    "rootNamespace": "Biome.SourcePatch.FSRAdapter",
+    "references": [
+        "GUID:b75b497805046c443a21f90e84a5ff4f",
+        "GUID:97dcf6b63da809f4aa9573d9e792e540",
+        "UnityMCP.Editor.SourcePatch"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Microsoft.CodeAnalysis.dll",
+        "Microsoft.CodeAnalysis.CSharp.dll",
+        "System.Collections.Immutable.dll",
+        "ImmersiveVRTools.Common.Editor.dll",
+        "ImmersiveVRTools.Common.Runtime.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
