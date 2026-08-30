@@ -2,7 +2,7 @@
   "schema_version": 1,
   "upstream_commit": "51140b71d9e5df1de231b33ec20ee089b18bebec",
   "harmony_blob": {
-    "path": "Assets/Plugins/Harmony/net48/0Harmony.dll.bytes",
+    "path": "Assets/Plugins/Harmony/Editor/0Harmony.dll.bytes",
     "asset_guid": "494e757c92cba704db1d95279f80a30f",
     "package_id": "Lib.Harmony",
     "package_version": "2.4.2",
@@ -118,20 +118,40 @@
     {
       "path": "Assets/Plugins/Roslyn/2021+/System.Numerics.Vectors.dll",
       "package_id": "System.Numerics.Vectors",
-      "package_version": "4.5.0",
-      "package_sha256": "a9d49320581fda1b4f4be6212c68c01a22cdf228026099c20a8eabefcf90f9cf",
-      "asset_sha256": "17924e5dc87e0d6229d2dd0bcfc1fdfabd820901b13a68baa89fcb80c4d1a67f",
+      "package_version": "4.4.0",
+      "package_sha256": "6ae5d02b67e52ff2699c1feb11c01c526e2f60c09830432258e0809486aabb65",
+      "package_asset": "lib/netstandard2.0/System.Numerics.Vectors.dll",
+      "asset_sha256": "2324ee5a35674269225e2aa20957ce8830dbca0cffb918bd593f7a3222dee480",
       "assembly_name": "System.Numerics.Vectors",
-      "assembly_version": "4.1.4.0",
-      "mvid": "BDAB00D2-0F43-4B68-AF83-6C4884136DAB",
+      "assembly_version": "4.1.3.0",
+      "mvid": "95DE52AB-0179-450A-9F6F-08D224D60B15",
       "license": "MIT"
     }
   ],
   "allowed_reference_unifications": {
     "System.Memory|System.Buffers|4.0.2.0": "4.0.3.0",
-    "System.Memory|System.Numerics.Vectors|4.1.3.0": "4.1.4.0",
     "System.Memory|System.Runtime.CompilerServices.Unsafe|4.0.4.1": "6.0.0.0",
     "System.Threading.Tasks.Extensions|System.Runtime.CompilerServices.Unsafe|4.0.4.1": "6.0.0.0"
+  },
+  "reference_unification_evidence": {
+    "System.Memory|System.Buffers|4.0.2.0": {
+      "requesting_package": "System.Memory 4.5.5",
+      "selected_package": "System.Buffers 4.5.1",
+      "selected_assembly_version": "4.0.3.0",
+      "constraint_source": "System.Memory 4.5.5 .NETStandard2.0 nuspec: System.Buffers >= 4.5.1"
+    },
+    "System.Memory|System.Runtime.CompilerServices.Unsafe|4.0.4.1": {
+      "requesting_package": "System.Memory 4.5.5",
+      "selected_package": "System.Runtime.CompilerServices.Unsafe 6.0.0",
+      "selected_assembly_version": "6.0.0.0",
+      "constraint_source": "Microsoft.CodeAnalysis.Common 4.6.0 .NETStandard2.0 nuspec: System.Runtime.CompilerServices.Unsafe >= 6.0.0"
+    },
+    "System.Threading.Tasks.Extensions|System.Runtime.CompilerServices.Unsafe|4.0.4.1": {
+      "requesting_package": "System.Threading.Tasks.Extensions 4.5.4",
+      "selected_package": "System.Runtime.CompilerServices.Unsafe 6.0.0",
+      "selected_assembly_version": "6.0.0.0",
+      "constraint_source": "Microsoft.CodeAnalysis.Common 4.6.0 .NETStandard2.0 nuspec: System.Runtime.CompilerServices.Unsafe >= 6.0.0"
+    }
   },
   "required_notices": [
     "LICENSE",

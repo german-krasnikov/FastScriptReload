@@ -45,16 +45,21 @@ class LoaderHarnessTests(unittest.TestCase):
     def test_real_blob_loads_once_and_exposes_exact_contract(self) -> None:
         self.assertEqual(self.run_mode("valid", ROOT / "Assets"), "VALID")
 
+    def test_concurrent_calls_share_one_verified_load(self) -> None:
+        self.assertEqual(
+            self.run_mode("concurrent", ROOT / "Assets"), "CONCURRENT"
+        )
+
     def test_wrong_asset_path_fails_closed(self) -> None:
         self.assertEqual(self.run_mode("bad-path", ROOT / "Assets"), "REJECTED:bad-path")
 
     def test_mutated_blob_hash_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory(prefix="fsr-mutant-") as temp_dir:
             mutant_root = Path(temp_dir)
-            mutant_blob = mutant_root / "Plugins/Harmony/net48/0Harmony.dll.bytes"
+            mutant_blob = mutant_root / "Plugins/Harmony/Editor/0Harmony.dll.bytes"
             mutant_blob.parent.mkdir(parents=True)
             data = bytearray(
-                (ROOT / "Assets/Plugins/Harmony/net48/0Harmony.dll.bytes").read_bytes()
+                (ROOT / "Assets/Plugins/Harmony/Editor/0Harmony.dll.bytes").read_bytes()
             )
             data[-1] ^= 1
             mutant_blob.write_bytes(data)

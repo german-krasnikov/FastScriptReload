@@ -27,7 +27,7 @@ namespace FastScriptReload.Runtime.Polyfills
         const string HarmonyBlobSha256 = "77e6901ecc606aec66c2a972782a3779e4f50c037d2d165eb7ececdd4d8f794d";
         const string HarmonyMvid = "B9E6CF65-9433-482B-8860-83CFF28D0128";
         const string PackageName = "com.handzlikchris.fastscriptreload";
-        const string BlobAssetPath = "Packages/com.handzlikchris.fastscriptreload/Plugins/Harmony/net48/0Harmony.dll.bytes";
+        const string BlobAssetPath = "Packages/com.handzlikchris.fastscriptreload/Plugins/Harmony/Editor/0Harmony.dll.bytes";
 
         sealed class State
         {

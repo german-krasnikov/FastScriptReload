@@ -11,16 +11,63 @@ from typing import Any
 
 UPSTREAM = "51140b71d9e5df1de231b33ec20ee089b18bebec"
 INVENTORY = Path("Assets/Documentation~/DependencyInventory.json")
-HARMONY_BLOB = Path("Assets/Plugins/Harmony/net48/0Harmony.dll.bytes")
+HARMONY_BLOB = Path("Assets/Plugins/Harmony/Editor/0Harmony.dll.bytes")
+HARMONY_ASSET_PATH = (
+    "Packages/com.handzlikchris.fastscriptreload/Plugins/Harmony/Editor/"
+    "0Harmony.dll.bytes"
+)
 HARMONY_SHA256 = "77e6901ecc606aec66c2a972782a3779e4f50c037d2d165eb7ececdd4d8f794d"
 HARMONY_MVID = "B9E6CF65-9433-482B-8860-83CFF28D0128"
 HARMONY_GUID = "494e757c92cba704db1d95279f80a30f"
+EXPECTED_HARMONY_BLOB = {
+    "path": str(HARMONY_BLOB),
+    "asset_guid": HARMONY_GUID,
+    "package_id": "Lib.Harmony",
+    "package_version": "2.4.2",
+    "package_sha256": "d64592e53090464559fce48612c9ca7c8dc73113841376b7aa3455f46fc5d579",
+    "package_asset": "lib/net48/0Harmony.dll",
+    "asset_sha256": HARMONY_SHA256,
+    "assembly_name": "0Harmony",
+    "module_name": "0Harmony",
+    "assembly_version": "2.4.2.0",
+    "mvid": HARMONY_MVID,
+    "license": "MIT",
+}
+NUMERICS_PACKAGE_ASSET = "lib/netstandard2.0/System.Numerics.Vectors.dll"
 ROSLYN_DIR = Path("Assets/Plugins/Roslyn/2021+")
 EXPECTED_UNIFICATIONS = {
     "System.Memory|System.Buffers|4.0.2.0": "4.0.3.0",
-    "System.Memory|System.Numerics.Vectors|4.1.3.0": "4.1.4.0",
     "System.Memory|System.Runtime.CompilerServices.Unsafe|4.0.4.1": "6.0.0.0",
     "System.Threading.Tasks.Extensions|System.Runtime.CompilerServices.Unsafe|4.0.4.1": "6.0.0.0",
+}
+EXPECTED_UNIFICATION_EVIDENCE = {
+    "System.Memory|System.Buffers|4.0.2.0": {
+        "requesting_package": "System.Memory 4.5.5",
+        "selected_package": "System.Buffers 4.5.1",
+        "selected_assembly_version": "4.0.3.0",
+        "constraint_source": (
+            "System.Memory 4.5.5 .NETStandard2.0 nuspec: "
+            "System.Buffers >= 4.5.1"
+        ),
+    },
+    "System.Memory|System.Runtime.CompilerServices.Unsafe|4.0.4.1": {
+        "requesting_package": "System.Memory 4.5.5",
+        "selected_package": "System.Runtime.CompilerServices.Unsafe 6.0.0",
+        "selected_assembly_version": "6.0.0.0",
+        "constraint_source": (
+            "Microsoft.CodeAnalysis.Common 4.6.0 .NETStandard2.0 nuspec: "
+            "System.Runtime.CompilerServices.Unsafe >= 6.0.0"
+        ),
+    },
+    "System.Threading.Tasks.Extensions|System.Runtime.CompilerServices.Unsafe|4.0.4.1": {
+        "requesting_package": "System.Threading.Tasks.Extensions 4.5.4",
+        "selected_package": "System.Runtime.CompilerServices.Unsafe 6.0.0",
+        "selected_assembly_version": "6.0.0.0",
+        "constraint_source": (
+            "Microsoft.CodeAnalysis.Common 4.6.0 .NETStandard2.0 nuspec: "
+            "System.Runtime.CompilerServices.Unsafe >= 6.0.0"
+        ),
+    },
 }
 EXPECTED_PACKAGE_SHAS = {
     "Microsoft.CodeAnalysis.Common|4.6.0": "e24a168a7888aefe190664bd4996f7df8eca69e8ca2a1d759fb0918fd7e47363",
@@ -28,7 +75,7 @@ EXPECTED_PACKAGE_SHAS = {
     "System.Buffers|4.5.1": "c30b3dd2c7e2f4cee4b823d692fd42118309b42ab1f5007f923d329a5b0d6b12",
     "System.Collections.Immutable|7.0.0": "f5a9f6c1bc6e7b6aabb6e818112f5ac2c85083e29f26a6a386786ce3991021d9",
     "System.Memory|4.5.5": "10f43da352a29fb2b3188e4edd4dcf5100194c8b526e4f61fe2e2b5623775a22",
-    "System.Numerics.Vectors|4.5.0": "a9d49320581fda1b4f4be6212c68c01a22cdf228026099c20a8eabefcf90f9cf",
+    "System.Numerics.Vectors|4.4.0": "6ae5d02b67e52ff2699c1feb11c01c526e2f60c09830432258e0809486aabb65",
     "System.Reflection.Metadata|7.0.0": "1b000a4219213c1613aa645d1bd73db5aaab292283c325203848562cac5634f2",
     "System.Runtime.CompilerServices.Unsafe|6.0.0": "6c41b53e70e9eee298cff3a02ce5acdd15b04125589be0273f0566026720a762",
     "System.Text.Encoding.CodePages|7.0.0": "782293570ba60f4e7564472825c0d54469c8180b04bcaa5f1f7c9d2a5b87c66a",
@@ -45,7 +92,7 @@ SOURCE_ALLOWLIST = {
 FRAMEWORK_REFERENCES = {
     "mscorlib", "netstandard", "System", "System.Core", "System.Runtime",
     "System.Collections", "System.Diagnostics.Debug", "System.Globalization",
-    "System.Linq", "System.Numerics.Vectors", "System.Resources.ResourceManager",
+    "System.Linq", "System.Resources.ResourceManager",
     "System.Runtime.Extensions", "System.Runtime.InteropServices",
     "System.Threading", "System.Threading.Tasks",
 }
@@ -136,11 +183,10 @@ def validate_inventory(data: dict[str, Any]) -> None:
         raise ContractError("Inventory contains duplicate managed simple names")
     if data.get("allowed_reference_unifications") != EXPECTED_UNIFICATIONS:
         raise ContractError("Inventory reference unifications are not frozen")
-    blob = data.get("harmony_blob")
-    if not isinstance(blob, dict) or blob.get("path") != str(HARMONY_BLOB):
-        raise ContractError("Inventory Harmony blob path is not frozen")
-    if blob.get("asset_sha256") != HARMONY_SHA256 or blob.get("mvid") != HARMONY_MVID:
-        raise ContractError("Inventory Harmony blob identity is not frozen")
+    if data.get("reference_unification_evidence") != EXPECTED_UNIFICATION_EVIDENCE:
+        raise ContractError("Inventory unification evidence is not frozen")
+    if data.get("harmony_blob") != EXPECTED_HARMONY_BLOB:
+        raise ContractError("Inventory Harmony blob contract is not frozen")
     for asset in assets:
         required = {
             "path", "package_id", "package_version", "package_sha256", "asset_sha256",
@@ -153,6 +199,11 @@ def validate_inventory(data: dict[str, Any]) -> None:
         package_key = f"{asset['package_id']}|{asset['package_version']}"
         if EXPECTED_PACKAGE_SHAS.get(package_key) != asset["package_sha256"]:
             raise ContractError(f"Unfrozen package provenance: {package_key}")
+        if (
+            package_key == "System.Numerics.Vectors|4.4.0"
+            and asset.get("package_asset") != NUMERICS_PACKAGE_ASSET
+        ):
+            raise ContractError("Numerics package asset is not frozen")
     actual_packages = {
         f"{asset['package_id']}|{asset['package_version']}" for asset in assets
     }
@@ -171,8 +222,14 @@ def verify_candidate(root: Path) -> None:
         raise ContractError("Harmony blob module name is not frozen")
     meta = blob.with_suffix(blob.suffix + ".meta")
     meta_text = meta.read_text(encoding="utf-8")
-    if "PluginImporter" in meta_text or f"guid: {HARMONY_GUID}" not in meta_text:
-        raise ContractError("Harmony blob must not use PluginImporter")
+    if "Editor" not in HARMONY_BLOB.parts:
+        raise ContractError("Harmony blob must be physically scoped under Editor")
+    if (
+        "TextScriptImporter:" not in meta_text
+        or "PluginImporter" in meta_text
+        or f"guid: {HARMONY_GUID}" not in meta_text
+    ):
+        raise ContractError("Harmony blob must be an inert Editor-only text asset")
 
     imported = list((root / "Assets/Plugins").rglob("*.dll"))
     forbidden = [
@@ -249,6 +306,7 @@ def verify_candidate(root: Path) -> None:
 def validate_loader_source(text: str) -> None:
     required = (
         HARMONY_GUID,
+        HARMONY_ASSET_PATH,
         HARMONY_SHA256,
         HARMONY_MVID,
         'new Version(2, 4, 2, 0)',

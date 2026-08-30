@@ -20,7 +20,7 @@ class DependencyContractTests(unittest.TestCase):
         verify_candidate(ROOT)
 
     def test_sha_guard_rejects_mutant_digest(self) -> None:
-        blob = ROOT / "Assets/Plugins/Harmony/net48/0Harmony.dll.bytes"
+        blob = ROOT / "Assets/Plugins/Harmony/Editor/0Harmony.dll.bytes"
         with self.assertRaises(ContractError):
             require_sha(blob, "0" * 64)
 
@@ -38,12 +38,28 @@ class DependencyContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "Incomplete"):
             validate_inventory(mutant)
 
+    def test_inventory_rejects_mutated_harmony_package_version(self) -> None:
+        data = load_inventory(ROOT)
+        mutant = copy.deepcopy(data)
+        mutant["harmony_blob"]["package_version"] = "2.4.1"
+        with self.assertRaisesRegex(ContractError, "Harmony blob contract"):
+            validate_inventory(mutant)
+
     def test_inventory_rejects_unreviewed_binding_unification(self) -> None:
         data = load_inventory(ROOT)
         mutant = copy.deepcopy(data)
         mutant["allowed_reference_unifications"][
             "System.Memory|System.Buffers|4.0.2.0"
         ] = "4.0.4.0"
+        with self.assertRaisesRegex(ContractError, "unifications"):
+            validate_inventory(mutant)
+
+    def test_inventory_rejects_a_fourth_binding_unification(self) -> None:
+        data = load_inventory(ROOT)
+        mutant = copy.deepcopy(data)
+        mutant["allowed_reference_unifications"][
+            "System.Memory|System.Numerics.Vectors|4.1.3.0"
+        ] = "4.1.4.0"
         with self.assertRaisesRegex(ContractError, "unifications"):
             validate_inventory(mutant)
 
