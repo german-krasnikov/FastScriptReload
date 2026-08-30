@@ -87,9 +87,9 @@ namespace FastScriptReload.Runtime
                         foreach (var createdTypeMethodToUpdate in createdType.GetMethods(ALL_DECLARED_METHODS_BINDING_FLAGS)
                                      .Where(m => !ExcludeMethodsDefinedOnTypes.Contains(m.DeclaringType)))
                         {
-                            var createdTypeMethodToUpdateFullDescriptionWithoutPatchedClassPostfix = RemoveClassPostfix(createdTypeMethodToUpdate.ResolveFullName());
+                            var createdTypeMethodToUpdateFullDescriptionWithoutPatchedClassPostfix = ResolveMethodIdentity(createdTypeMethodToUpdate);
                             var matchingMethodInExistingType = allDeclaredMethodsInExistingType
-                                .SingleOrDefault(m => m.ResolveFullName() == createdTypeMethodToUpdateFullDescriptionWithoutPatchedClassPostfix);
+                                .SingleOrDefault(m => string.Equals(ResolveMethodIdentity(m), createdTypeMethodToUpdateFullDescriptionWithoutPatchedClassPostfix, StringComparison.Ordinal));
                             if (matchingMethodInExistingType != null)
                             {
                                 if (matchingMethodInExistingType.IsGenericMethod)
@@ -236,6 +236,11 @@ namespace FastScriptReload.Runtime
         private static string RemoveClassPostfix(string fqdn)
         {
             return fqdn.Replace(ClassnamePatchedPostfix, string.Empty);
+        }
+
+        private static string ResolveMethodIdentity(MethodBase method)
+        {
+            return RemoveClassPostfix(method.ResolveFullName());
         }
     }
     

@@ -21,8 +21,10 @@ class MethodIdentityHarnessTests(unittest.TestCase):
     def test_runtime_loader_uses_compile_visible_method_identity(self) -> None:
         source = LOADER.read_text(encoding="utf-8-sig")
         self.assertNotIn("FullDescription()", source)
-        self.assertIn("createdTypeMethodToUpdate.ResolveFullName()", source)
-        self.assertIn("m.ResolveFullName()", source)
+        self.assertIn("ResolveMethodIdentity(createdTypeMethodToUpdate)", source)
+        self.assertIn("ResolveMethodIdentity(m)", source)
+        self.assertIn("StringComparison.Ordinal", source)
+        self.assertIn(".SingleOrDefault(", source)
 
     def test_existing_and_patched_methods_have_exact_matching_identities(self) -> None:
         if shutil.which("mcs") is None or shutil.which("mono") is None:
@@ -62,6 +64,19 @@ class MethodIdentityHarnessTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual(result.stdout.strip(), "METHOD-IDENTITIES-VALID")
+            for mutant in ("name-only", "zero"):
+                rejected = subprocess.run(
+                    ["mono", str(output), mutant],
+                    cwd=ROOT,
+                    env=environment,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertEqual(
+                    rejected.returncode, 0, rejected.stdout + rejected.stderr
+                )
+                self.assertEqual(rejected.stdout.strip(), "REJECTED:" + mutant)
 
 
 if __name__ == "__main__":
