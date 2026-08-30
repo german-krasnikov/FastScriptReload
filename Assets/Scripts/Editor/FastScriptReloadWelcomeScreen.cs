@@ -184,16 +184,8 @@ You can always get back to this screen via:
         static void OnScriptHotReloadNoInstance() 
         { 
             Debug.Log("Reloaded - start");
-            var field = typeof(FastScriptReloadWelcomeScreen).GetField(
-                nameof(LastInspectFileHotReloadStateError),
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            if (field == null)
-            {
-                throw new MissingFieldException(
-                    typeof(FastScriptReloadWelcomeScreen).FullName,
-                    nameof(LastInspectFileHotReloadStateError));
-            }
-
+            var field = typeof(FastScriptReloadWelcomeScreen).GetField(nameof(LastInspectFileHotReloadStateError), BindingFlags.Static | BindingFlags.Public);
+            if (field == null) throw new MissingFieldException(nameof(LastInspectFileHotReloadStateError));
             LastInspectFileHotReloadStateError = (DynamicFileHotReloadState)field.GetValue(null);
             Debug.Log("Reloaded - end");
         }

@@ -1,7 +1,6 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-
 #if UNITY_EDITOR
 using System.IO;
 using System.Linq;
@@ -17,230 +16,98 @@ namespace FastScriptReload.Runtime.Polyfills
 {
     public sealed class HarmonyDependencyException : InvalidOperationException
     {
-        public HarmonyDependencyException(string message) : base(message)
-        {
-        }
-
-        public HarmonyDependencyException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
+        public HarmonyDependencyException(string message) : base(message) { }
+        public HarmonyDependencyException(string message, Exception inner) : base(message, inner) { }
     }
 
     public static class Memory
     {
 #if UNITY_EDITOR
-        private const string HarmonyBlobGuid = "494e757c92cba704db1d95279f80a30f";
-        private const string HarmonyBlobSha256 = "77e6901ecc606aec66c2a972782a3779e4f50c037d2d165eb7ececdd4d8f794d";
-        private const string HarmonyMvid = "B9E6CF65-9433-482B-8860-83CFF28D0128";
-        private const string HarmonyAssemblyName = "0Harmony";
-        private const string ProviderPackageName = "com.handzlikchris.fastscriptreload";
-        private const string BlobAssetPath =
-            "Packages/com.handzlikchris.fastscriptreload/Plugins/Harmony/net48/0Harmony.dll.bytes";
+        const string HarmonyBlobGuid = "494e757c92cba704db1d95279f80a30f";
+        const string HarmonyBlobSha256 = "77e6901ecc606aec66c2a972782a3779e4f50c037d2d165eb7ececdd4d8f794d";
+        const string HarmonyMvid = "B9E6CF65-9433-482B-8860-83CFF28D0128";
+        const string PackageName = "com.handzlikchris.fastscriptreload";
+        const string BlobAssetPath = "Packages/com.handzlikchris.fastscriptreload/Plugins/Harmony/net48/0Harmony.dll.bytes";
 
-        private static readonly Version HarmonyVersion = new Version(2, 4, 2, 0);
-        private static readonly object LoadGate = new object();
-        private static Assembly _harmonyAssembly;
-        private static MethodInfo _detourMethod;
-        private static Exception _loadFailure;
-        private static bool _loadAttempted;
+        sealed class State
+        {
+            internal readonly Assembly Assembly;
+            internal readonly MethodInfo Detour;
+            internal State(Assembly assembly, MethodInfo detour) { Assembly = assembly; Detour = detour; }
+        }
+
+        static readonly Lazy<State> Verified = new Lazy<State>(Load);
 
         public static void DetourMethod(MethodBase original, MethodBase target)
         {
             if (original == null) throw new ArgumentNullException(nameof(original));
             if (target == null) throw new ArgumentNullException(nameof(target));
-
-            MethodInfo detourMethod;
-            lock (LoadGate)
+            try { Verified.Value.Detour.Invoke(null, new object[] { original, target }); }
+            catch (TargetInvocationException error) when (error.InnerException != null)
             {
-                EnsureLoaded();
-                detourMethod = _detourMethod;
-            }
-
-            try
-            {
-                detourMethod.Invoke(null, new object[] { original, target });
-            }
-            catch (TargetInvocationException exception) when (exception.InnerException != null)
-            {
-                ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+                ExceptionDispatchInfo.Capture(error.InnerException).Throw();
                 throw;
             }
         }
 
-        internal static Assembly GetHarmonyAssembly()
+        internal static Assembly GetHarmonyAssembly() { return Verified.Value.Assembly; }
+
+        static State Load()
         {
-            lock (LoadGate)
-            {
-                EnsureLoaded();
-                return _harmonyAssembly;
-            }
+            try { return LoadVerified(); }
+            catch (HarmonyDependencyException) { throw; }
+            catch (Exception error) { throw new HarmonyDependencyException("Pinned Harmony load failed.", error); }
         }
 
-        private static void EnsureLoaded()
+        static State LoadVerified()
         {
-            if (_detourMethod != null) return;
-            if (_loadAttempted)
-            {
-                throw new HarmonyDependencyException(
-                    "The pinned Harmony dependency failed its first load attempt.", _loadFailure);
-            }
-
-            _loadAttempted = true;
-            try
-            {
-                LoadAndValidate();
-            }
-            catch (HarmonyDependencyException exception)
-            {
-                _loadFailure = exception;
-                throw;
-            }
-            catch (Exception exception)
-            {
-                var failure = new HarmonyDependencyException(
-                    "The pinned Harmony dependency could not be loaded.", exception);
-                _loadFailure = failure;
-                throw failure;
-            }
-        }
-
-        private static void LoadAndValidate()
-        {
-            if (FindLoadedHarmonyAssemblies().Length != 0)
-            {
-                throw Failure("An unverified 0Harmony assembly is already loaded.");
-            }
-
-            var blobPath = ResolveBlobPath();
-            var blobBytes = File.ReadAllBytes(blobPath);
-            if (!String.Equals(ComputeSha256(blobBytes), HarmonyBlobSha256, StringComparison.Ordinal))
-            {
-                throw Failure("The Harmony blob SHA-256 does not match the frozen dependency.");
-            }
-
-            var loadedAssembly = Assembly.Load(blobBytes);
-            var loadedHarmonyAssemblies = FindLoadedHarmonyAssemblies();
-            if (loadedHarmonyAssemblies.Length != 1 ||
-                !ReferenceEquals(loadedHarmonyAssemblies[0], loadedAssembly))
-            {
-                throw Failure("Harmony load did not produce exactly one verified assembly.");
-            }
-
-            ValidateAssemblyIdentity(loadedAssembly);
-            var patchTools = loadedAssembly.GetType("HarmonyLib.PatchTools", false);
-            if (patchTools == null)
-            {
-                throw Failure("HarmonyLib.PatchTools is missing from the pinned assembly.");
-            }
-
-            var candidates = patchTools
-                .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(IsExactDetourMethod)
-                .ToArray();
-            if (candidates.Length != 1)
-            {
-                throw Failure("The exact PatchTools.DetourMethod contract is missing or ambiguous.");
-            }
-
-            _harmonyAssembly = loadedAssembly;
-            _detourMethod = candidates[0];
-        }
-
-        private static string ResolveBlobPath()
-        {
+            if (Loaded().Length != 0) throw Failure("An unverified 0Harmony assembly is already loaded.");
             var assetPath = AssetDatabase.GUIDToAssetPath(HarmonyBlobGuid);
-            if (!String.Equals(assetPath, BlobAssetPath, StringComparison.Ordinal))
-            {
-                throw Failure("The Harmony blob GUID does not resolve to its frozen package path.");
-            }
+            var package = PackageInfo.FindForAssetPath(assetPath);
+            if (assetPath != BlobAssetPath || package == null || package.name != PackageName || String.IsNullOrEmpty(package.resolvedPath))
+                throw Failure("Harmony blob ownership or asset path is not frozen.");
 
-            var packageInfo = PackageInfo.FindForAssetPath(assetPath);
-            if (packageInfo == null ||
-                !String.Equals(packageInfo.name, ProviderPackageName, StringComparison.Ordinal) ||
-                String.IsNullOrEmpty(packageInfo.resolvedPath))
-            {
-                throw Failure("The Harmony blob is not owned by the expected provider package.");
-            }
+            var root = Path.GetFullPath(package.resolvedPath);
+            var relative = BlobAssetPath.Substring(("Packages/" + PackageName + "/").Length);
+            var blobPath = Path.GetFullPath(Path.Combine(root, relative));
+            var prefix = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var comparison = Path.DirectorySeparatorChar == '\\' ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            if (!blobPath.StartsWith(prefix, comparison) || !File.Exists(blobPath)) throw Failure("Harmony blob escaped its package root.");
 
-            var packageRoot = Path.GetFullPath(packageInfo.resolvedPath);
-            var relativePath = assetPath.Substring(("Packages/" + ProviderPackageName + "/").Length);
-            var blobPath = Path.GetFullPath(Path.Combine(packageRoot, relativePath));
-            var comparison = Path.DirectorySeparatorChar == '\\'
-                ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal;
-            var rootPrefix = packageRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                             + Path.DirectorySeparatorChar;
-            if (!blobPath.StartsWith(rootPrefix, comparison) || !File.Exists(blobPath))
-            {
-                throw Failure("The Harmony blob resolves outside the provider package or is missing.");
-            }
+            var blobBytes = File.ReadAllBytes(blobPath);
+            if (Sha256(blobBytes) != HarmonyBlobSha256) throw Failure("Harmony blob SHA-256 is not frozen.");
+            var assembly = Assembly.Load(blobBytes);
+            var loaded = Loaded();
+            if (loaded.Length != 1 || !ReferenceEquals(loaded[0], assembly)) throw Failure("Harmony load is ambiguous.");
 
-            return blobPath;
-        }
-
-        private static Assembly[] FindLoadedHarmonyAssemblies()
-        {
-            return AppDomain.CurrentDomain.GetAssemblies()
-                .Where(assembly => String.Equals(
-                    assembly.GetName().Name, HarmonyAssemblyName, StringComparison.Ordinal))
-                .ToArray();
-        }
-
-        private static void ValidateAssemblyIdentity(Assembly assembly)
-        {
             var name = assembly.GetName();
-            var publicKeyToken = name.GetPublicKeyToken();
-            if (!String.Equals(name.Name, HarmonyAssemblyName, StringComparison.Ordinal) ||
-                name.Version != HarmonyVersion ||
-                !String.IsNullOrEmpty(name.CultureName) ||
-                (publicKeyToken != null && publicKeyToken.Length != 0) ||
-                assembly.ManifestModule.ModuleVersionId != new Guid(HarmonyMvid))
-            {
-                throw Failure("The loaded Harmony assembly identity or MVID is not frozen.");
-            }
+            var token = name.GetPublicKeyToken();
+            if (name.Name != "0Harmony" || name.Version != new Version(2, 4, 2, 0) ||
+                !String.IsNullOrEmpty(name.CultureName) || (token != null && token.Length != 0) ||
+                assembly.ManifestModule.ModuleVersionId != new Guid(HarmonyMvid)) throw Failure("Harmony identity is not frozen.");
+
+            var type = assembly.GetType("HarmonyLib.PatchTools", false);
+            var methods = type == null ? new MethodInfo[0] : type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(IsDetour).ToArray();
+            if (methods.Length != 1) throw Failure("Exact PatchTools.DetourMethod ABI is missing or ambiguous.");
+            return new State(assembly, methods[0]);
         }
 
-        private static bool IsExactDetourMethod(MethodInfo method)
+        static bool IsDetour(MethodInfo method)
         {
-            if (!String.Equals(method.Name, "DetourMethod", StringComparison.Ordinal) ||
-                !method.IsStatic || method.ReturnType != typeof(void))
-            {
-                return false;
-            }
-
             var parameters = method.GetParameters();
-            return parameters.Length == 2 &&
-                   parameters[0].ParameterType == typeof(MethodBase) &&
-                   parameters[1].ParameterType == typeof(MethodBase);
+            return method.Name == "DetourMethod" && method.IsStatic && method.ReturnType == typeof(void) && parameters.Length == 2 &&
+                   parameters[0].ParameterType == typeof(MethodBase) && parameters[1].ParameterType == typeof(MethodBase);
         }
 
-        private static string ComputeSha256(byte[] bytes)
+        static Assembly[] Loaded() { return AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "0Harmony").ToArray(); }
+        static HarmonyDependencyException Failure(string message) { return new HarmonyDependencyException(message); }
+        static string Sha256(byte[] bytes)
         {
-            using (var algorithm = SHA256.Create())
-            {
-                return BitConverter.ToString(algorithm.ComputeHash(bytes))
-                    .Replace("-", String.Empty)
-                    .ToLowerInvariant();
-            }
-        }
-
-        private static HarmonyDependencyException Failure(string message)
-        {
-            return new HarmonyDependencyException(message);
+            using (var algorithm = SHA256.Create()) return BitConverter.ToString(algorithm.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
         }
 #else
-        public static void DetourMethod(MethodBase original, MethodBase target)
-        {
-            throw new PlatformNotSupportedException(
-                "The pinned Fast Script Reload detour is supported only in the Unity Editor.");
-        }
-
-        internal static Assembly GetHarmonyAssembly()
-        {
-            throw new PlatformNotSupportedException(
-                "The pinned Fast Script Reload dependency is supported only in the Unity Editor.");
-        }
+        public static void DetourMethod(MethodBase original, MethodBase target) { throw new PlatformNotSupportedException(); }
+        internal static Assembly GetHarmonyAssembly() { throw new PlatformNotSupportedException(); }
 #endif
     }
 }

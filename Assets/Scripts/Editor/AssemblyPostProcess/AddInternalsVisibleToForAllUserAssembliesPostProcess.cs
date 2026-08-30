@@ -24,22 +24,10 @@ namespace FastScriptReload.Editor.AssemblyPostProcess
             AdjustedAssemblyRoot = new DirectoryInfo(Path.Combine(Application.dataPath, "..", "Temp", "Fast Script Reload", "AdjustedDlls"));
 
             CecilAssembly = Memory.GetHarmonyAssembly();
-            AssemblyDefinitionType = RequireEmbeddedCecilType("Mono.Cecil.AssemblyDefinition");
-            ReaderParametersType = RequireEmbeddedCecilType("Mono.Cecil.ReaderParameters");
-            CustomAttributeType = RequireEmbeddedCecilType("Mono.Cecil.CustomAttribute");
-            CustomAttributeArgumentType = RequireEmbeddedCecilType("Mono.Cecil.CustomAttributeArgument");
-        }
-
-        private static Type RequireEmbeddedCecilType(string fullName)
-        {
-            var type = CecilAssembly.GetType(fullName, false);
-            if (type == null)
-            {
-                throw new FastScriptReload.Runtime.Polyfills.HarmonyDependencyException(
-                    $"Embedded Harmony dependency type '{fullName}' is missing.");
-            }
-
-            return type;
+            AssemblyDefinitionType = CecilAssembly.GetType("Mono.Cecil.AssemblyDefinition", true);
+            ReaderParametersType = CecilAssembly.GetType("Mono.Cecil.ReaderParameters", true);
+            CustomAttributeType = CecilAssembly.GetType("Mono.Cecil.CustomAttribute", true);
+            CustomAttributeArgumentType = CecilAssembly.GetType("Mono.Cecil.CustomAttributeArgument", true);
         }
 
         public static string CreateAssemblyWithInternalsContentsVisibleTo(Assembly changedAssembly, string visibleToAssemblyName)
