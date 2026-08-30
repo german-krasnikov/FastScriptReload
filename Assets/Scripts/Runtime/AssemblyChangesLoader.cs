@@ -87,30 +87,30 @@ namespace FastScriptReload.Runtime
                         foreach (var createdTypeMethodToUpdate in createdType.GetMethods(ALL_DECLARED_METHODS_BINDING_FLAGS)
                                      .Where(m => !ExcludeMethodsDefinedOnTypes.Contains(m.DeclaringType)))
                         {
-                            var createdTypeMethodToUpdateFullDescriptionWithoutPatchedClassPostfix = RemoveClassPostfix(createdTypeMethodToUpdate.FullDescription());
+                            var createdTypeMethodToUpdateFullDescriptionWithoutPatchedClassPostfix = RemoveClassPostfix(createdTypeMethodToUpdate.ResolveFullName());
                             var matchingMethodInExistingType = allDeclaredMethodsInExistingType
-                                .SingleOrDefault(m => m.FullDescription() == createdTypeMethodToUpdateFullDescriptionWithoutPatchedClassPostfix);
+                                .SingleOrDefault(m => m.ResolveFullName() == createdTypeMethodToUpdateFullDescriptionWithoutPatchedClassPostfix);
                             if (matchingMethodInExistingType != null)
                             {
                                 if (matchingMethodInExistingType.IsGenericMethod)
                                 {
-                                    LoggerScoped.LogWarning($"Method: '{matchingMethodInExistingType.FullDescription()}' is generic. Hot-Reload for generic methods is not supported yet, you won't see changes for that method.");
+                                    LoggerScoped.LogWarning($"Method: '{matchingMethodInExistingType.ResolveFullName()}' is generic. Hot-Reload for generic methods is not supported yet, you won't see changes for that method.");
                                     continue;
                                 }
 
                                 if (matchingMethodInExistingType.DeclaringType != null && matchingMethodInExistingType.DeclaringType.IsGenericType)
                                 {
-                                    LoggerScoped.LogWarning($"Type for method: '{matchingMethodInExistingType.FullDescription()}' is generic. Hot-Reload for generic types is not supported yet, you won't see changes for that type.");
+                                    LoggerScoped.LogWarning($"Type for method: '{matchingMethodInExistingType.ResolveFullName()}' is generic. Hot-Reload for generic types is not supported yet, you won't see changes for that type.");
                                     continue;
                                 }
 
-                                LoggerScoped.LogDebug($"Trying to detour method, from: '{matchingMethodInExistingType.FullDescription()}' to: '{createdTypeMethodToUpdate.FullDescription()}'");
+                                LoggerScoped.LogDebug($"Trying to detour method, from: '{matchingMethodInExistingType.ResolveFullName()}' to: '{createdTypeMethodToUpdate.ResolveFullName()}'");
                                 DetourCrashHandler.LogDetour(matchingMethodInExistingType.ResolveFullName());
                                 Memory.DetourMethod(matchingMethodInExistingType, createdTypeMethodToUpdate);
                             }
                             else 
                             {
-                                LoggerScoped.LogWarning($"Method: {createdTypeMethodToUpdate.FullDescription()} does not exist in initially compiled type: {matchingTypeInExistingAssemblies.FullName}. " +
+                                LoggerScoped.LogWarning($"Method: {createdTypeMethodToUpdate.ResolveFullName()} does not exist in initially compiled type: {matchingTypeInExistingAssemblies.FullName}. " +
                                                  $"Adding new methods at runtime is not fully supported. \r\n" +
                                                  $"It'll only work new method is only used by declaring class (eg private method)\r\n" +
                                                  $"Make sure to add method before initial compilation.");
