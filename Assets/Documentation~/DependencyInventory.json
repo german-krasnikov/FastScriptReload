@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "upstream_commit": "51140b71d9e5df1de231b33ec20ee089b18bebec",
+  "harmony_blob": {
+    "path": "Assets/Plugins/Harmony/net48/0Harmony.dll.bytes",
+    "asset_guid": "494e757c92cba704db1d95279f80a30f",
+    "package_id": "Lib.Harmony",
+    "package_version": "2.4.2",
+    "package_sha256": "d64592e53090464559fce48612c9ca7c8dc73113841376b7aa3455f46fc5d579",
+    "package_asset": "lib/net48/0Harmony.dll",
+    "asset_sha256": "77e6901ecc606aec66c2a972782a3779e4f50c037d2d165eb7ececdd4d8f794d",
+    "assembly_name": "0Harmony",
+    "assembly_version": "2.4.2.0",
+    "mvid": "B9E6CF65-9433-482B-8860-83CFF28D0128",
+    "license": "MIT"
+  },
+  "managed_assets": [
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/Microsoft.CodeAnalysis.dll",
+      "package_id": "Microsoft.CodeAnalysis.Common",
+      "package_version": "4.6.0",
+      "package_sha256": "e24a168a7888aefe190664bd4996f7df8eca69e8ca2a1d759fb0918fd7e47363",
+      "asset_sha256": "233e5d17d266068a72d4f044d52d2ab06fdfd07c1816bb0cb5be5edf73179e35",
+      "assembly_name": "Microsoft.CodeAnalysis",
+      "assembly_version": "4.6.0.0",
+      "mvid": "1A14C3B3-2EE6-4D86-8946-22CCB459DE4E",
+      "license": "MIT"
+    },
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/Microsoft.CodeAnalysis.CSharp.dll",
+      "package_id": "Microsoft.CodeAnalysis.CSharp",
+      "package_version": "4.6.0",
+      "package_sha256": "382c54592a2556b98fd9bb36497f562e36ff53c068c7cb354daca4d39fe7dbf9",
+      "asset_sha256": "d8e70399ff5725728ba13373d4fc5f6b7b219fc78d520b68ddf01abb1389dc70",
+      "assembly_name": "Microsoft.CodeAnalysis.CSharp",
+      "assembly_version": "4.6.0.0",
+      "mvid": "6D96F5CE-A53C-437B-BA7A-D853988CA29D",
+      "license": "MIT"
+    },
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/System.Collections.Immutable.dll",
+      "package_id": "System.Collections.Immutable",
+      "package_version": "7.0.0",
+      "package_sha256": "f5a9f6c1bc6e7b6aabb6e818112f5ac2c85083e29f26a6a386786ce3991021d9",
+      "asset_sha256": "1255194f6ec9c1874085cdab24495fcd1430958018350d7b6630fd04b44bcb81",
+      "assembly_name": "System.Collections.Immutable",
+      "assembly_version": "7.0.0.0",
+      "mvid": "85BEE8CB-DDB7-458F-B7E9-FF936E888708",
+      "license": "MIT"
+    },
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/System.Reflection.Metadata.dll",
+      "package_id": "System.Reflection.Metadata",
+      "package_version": "7.0.0",
+      "package_sha256": "1b000a4219213c1613aa645d1bd73db5aaab292283c325203848562cac5634f2",
+      "asset_sha256": "c03b73b3ae01363313d151ad9fb77c3dff378814bdeb12b9b435a6d50f40b833",
+      "assembly_name": "System.Reflection.Metadata",
+      "assembly_version": "7.0.0.0",
+      "mvid": "3A1838B9-5365-4B21-B374-CC65F777F395",
+      "license": "MIT"
+    },
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/System.Runtime.CompilerServices.Unsafe.dll",
+      "package_id": "System.Runtime.CompilerServices.Unsafe",
+      "package_version": "6.0.0",
+      "package_sha256": "6c41b53e70e9eee298cff3a02ce5acdd15b04125589be0273f0566026720a762",
+      "asset_sha256": "01748200f2400c742aa689f1f5101bd6298efdfd92c00c18f4fa473847235ba9",
+      "assembly_name": "System.Runtime.CompilerServices.Unsafe",
+      "assembly_version": "6.0.0.0",
+      "mvid": "A8391708-F361-428D-A4A8-45FB3E6B1001",
+      "license": "MIT"
+    },
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/System.Text.Encoding.CodePages.dll",
+      "package_id": "System.Text.Encoding.CodePages",
+      "package_version": "7.0.0",
+      "package_sha256": "782293570ba60f4e7564472825c0d54469c8180b04bcaa5f1f7c9d2a5b87c66a",
+      "asset_sha256": "eaf68151619943ab2dc46247f2d22a29de0ea3805a56de0c32b75af12f89e74c",
+      "assembly_name": "System.Text.Encoding.CodePages",
+      "assembly_version": "7.0.0.0",
+      "mvid": "4215A2B3-B675-497C-8245-F58428897757",
+      "license": "MIT"
+    },
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/System.Threading.Tasks.Extensions.dll",
+      "package_id": "System.Threading.Tasks.Extensions",
+      "package_version": "4.5.4",
+      "package_sha256": "a304a963cc0796c5179f9c6b7d8022bbce3b2fa7c029eb6196f631f7b462d678",
+      "asset_sha256": "09901f63ebc4b8f0897b0128fb230c146529aee5c5cc90d7a7872e66a976bb5f",
+      "assembly_name": "System.Threading.Tasks.Extensions",
+      "assembly_version": "4.2.0.1",
+      "mvid": "619062A8-972F-4AE5-BBEE-E36AC541D14F",
+      "license": "MIT"
+    },
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/System.Memory.dll",
+      "package_id": "System.Memory",
+      "package_version": "4.5.5",
+      "package_sha256": "10f43da352a29fb2b3188e4edd4dcf5100194c8b526e4f61fe2e2b5623775a22",
+      "asset_sha256": "11590d8bb3b12f29f4202b3ef8593229a5cd6debb61e76cba9ac5493a82ee382",
+      "assembly_name": "System.Memory",
+      "assembly_version": "4.0.1.2",
+      "mvid": "00BE0FB5-88BE-459B-8356-FF9591CAC0F7",
+      "license": "MIT"
+    },
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/System.Buffers.dll",
+      "package_id": "System.Buffers",
+      "package_version": "4.5.1",
+      "package_sha256": "c30b3dd2c7e2f4cee4b823d692fd42118309b42ab1f5007f923d329a5b0d6b12",
+      "asset_sha256": "c65fff603b283dc966d1a8b730c11d5e5e750e8021bd24640612f6cc3f2c6fb7",
+      "assembly_name": "System.Buffers",
+      "assembly_version": "4.0.3.0",
+      "mvid": "081C3ECC-60B8-44F9-A6AA-B9D202311A05",
+      "license": "MIT"
+    },
+    {
+      "path": "Assets/Plugins/Roslyn/2021+/System.Numerics.Vectors.dll",
+      "package_id": "System.Numerics.Vectors",
+      "package_version": "4.5.0",
+      "package_sha256": "a9d49320581fda1b4f4be6212c68c01a22cdf228026099c20a8eabefcf90f9cf",
+      "asset_sha256": "17924e5dc87e0d6229d2dd0bcfc1fdfabd820901b13a68baa89fcb80c4d1a67f",
+      "assembly_name": "System.Numerics.Vectors",
+      "assembly_version": "4.1.4.0",
+      "mvid": "BDAB00D2-0F43-4B68-AF83-6C4884136DAB",
+      "license": "MIT"
+    }
+  ],
+  "allowed_reference_unifications": {
+    "System.Memory|System.Buffers|4.0.2.0": "4.0.3.0",
+    "System.Memory|System.Numerics.Vectors|4.1.3.0": "4.1.4.0",
+    "System.Memory|System.Runtime.CompilerServices.Unsafe|4.0.4.1": "6.0.0.0",
+    "System.Threading.Tasks.Extensions|System.Runtime.CompilerServices.Unsafe|4.0.4.1": "6.0.0.0"
+  },
+  "required_notices": [
+    "LICENSE",
+    "Assets/Plugins/Harmony/HarmonyLicense.txt",
+    "Assets/Documentation~/MonoModLicense.txt",
+    "Assets/Documentation~/IcedLicense.txt",
+    "Assets/Documentation~/CecilLicense.txt",
+    "Assets/Plugins/Roslyn/2021+/RoslynLicense.txt"
+  ]
+}

@@ -7,7 +7,6 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "0Harmony.dll",
         "ImmersiveVRTools.Common.Runtime.dll"
     ],
     "autoReferenced": false,

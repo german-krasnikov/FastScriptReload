@@ -11,12 +11,11 @@
     "allowUnsafeCode": true,
     "overrideReferences": true,
     "precompiledReferences": [
-        "0Harmony.dll",
-        "Microsoft.CodeAnalysis.FSR.dll",
-        "Microsoft.CodeAnalysis.CSharp.FSR.dll",
+        "Microsoft.CodeAnalysis.dll",
+        "Microsoft.CodeAnalysis.CSharp.dll",
         "ImmersiveVRTools.Common.Editor.dll",
         "ImmersiveVRTools.Common.Runtime.dll",
-        "System.Collections.Immutable.FSR.dll"
+        "System.Collections.Immutable.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [],
