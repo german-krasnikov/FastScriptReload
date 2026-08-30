@@ -10,6 +10,7 @@
     "package_asset": "lib/net48/0Harmony.dll",
     "asset_sha256": "77e6901ecc606aec66c2a972782a3779e4f50c037d2d165eb7ececdd4d8f794d",
     "assembly_name": "0Harmony",
+    "module_name": "0Harmony",
     "assembly_version": "2.4.2.0",
     "mvid": "B9E6CF65-9433-482B-8860-83CFF28D0128",
     "license": "MIT"

@@ -10,7 +10,6 @@ using System.Text;
 using System.Threading;
 using FastScriptReload.Editor.AssemblyPostProcess;
 using FastScriptReload.Runtime;
-using HarmonyLib;
 using ImmersiveVRTools.Editor.Common.Cache;
 using ImmersiveVRTools.Editor.Common.Utilities;
 using ImmersiveVRTools.Runtime.Common;

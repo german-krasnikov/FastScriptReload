@@ -9,7 +9,6 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-
 UPSTREAM = "51140b71d9e5df1de231b33ec20ee089b18bebec"
 INVENTORY = Path("Assets/Documentation~/DependencyInventory.json")
 HARMONY_BLOB = Path("Assets/Plugins/Harmony/net48/0Harmony.dll.bytes")
@@ -93,6 +92,14 @@ def assembly_identity(path: Path) -> tuple[str, str, str]:
     )
 
 
+def module_name(path: Path) -> str:
+    module = _monodis("--module", path)
+    match = re.search(r"^\d+:\s+(\S+)\s+\d+\s+\{", module, re.MULTILINE)
+    if not match:
+        raise ContractError(f"Cannot read managed module name for {path}")
+    return match.group(1)
+
+
 def assembly_references(path: Path) -> dict[str, str]:
     output = _monodis("--assemblyref", path)
     references: dict[str, str] = {}
@@ -160,6 +167,8 @@ def verify_candidate(root: Path) -> None:
     name, version, mvid = assembly_identity(blob)
     if (name, version, mvid) != ("0Harmony", "2.4.2.0", HARMONY_MVID):
         raise ContractError("Harmony blob identity is not frozen")
+    if module_name(blob) != "0Harmony":
+        raise ContractError("Harmony blob module name is not frozen")
     meta = blob.with_suffix(blob.suffix + ".meta")
     meta_text = meta.read_text(encoding="utf-8")
     if "PluginImporter" in meta_text or f"guid: {HARMONY_GUID}" not in meta_text:
@@ -235,3 +244,61 @@ def verify_candidate(root: Path) -> None:
     for notice in notices:
         if not (root / notice).is_file():
             raise ContractError(f"Missing license notice: {notice}")
+
+
+def validate_loader_source(text: str) -> None:
+    required = (
+        HARMONY_GUID,
+        HARMONY_SHA256,
+        HARMONY_MVID,
+        'new Version(2, 4, 2, 0)',
+        '"HarmonyLib.PatchTools"',
+        '"DetourMethod"',
+        "parameters[0].ParameterType == typeof(MethodBase)",
+        "parameters[1].ParameterType == typeof(MethodBase)",
+        "Assembly.Load(blobBytes)",
+        "AssetDatabase.GUIDToAssetPath(HarmonyBlobGuid)",
+        "PackageInfo.FindForAssetPath(assetPath)",
+        "TargetInvocationException",
+        "ExceptionDispatchInfo.Capture",
+    )
+    missing = [term for term in required if term not in text]
+    if missing:
+        raise ContractError(f"Pinned Harmony loader terms missing: {missing}")
+    forbidden = ("using HarmonyLib;", "Debug.LogError", "typeof(HarmonyLib.")
+    if any(term in text for term in forbidden):
+        raise ContractError("Pinned Harmony loader contains false-success dependency use")
+
+
+def verify_source_candidate(root: Path) -> None:
+    polyfills = root / "Assets/Scripts/Runtime/Polyfills.cs"
+    validate_loader_source(polyfills.read_text(encoding="utf-8-sig"))
+
+    excluded_mcs = root / "Assets/Scripts/Editor/Compilation/PatchMcsArgsGeneration.cs"
+    forbidden_patterns = (
+        "using HarmonyLib;", "typeof(HarmonyLib.", "new Harmony(",
+        "new HarmonyMethod(", "HarmonyLib.AccessTools",
+    )
+    for source in (root / "Assets/Scripts").rglob("*.cs"):
+        if source == excluded_mcs:
+            continue
+        source_text = source.read_text(encoding="utf-8-sig")
+        if any(pattern in source_text for pattern in forbidden_patterns):
+            raise ContractError(f"{source}: compile-time Harmony use remains")
+
+    for config in (root / "Assets").rglob("*.asmdef"):
+        if "FastScriptReload_CompileViaMCS" in config.read_text(encoding="utf-8"):
+            raise ContractError(f"{config}: unsupported MCS fallback is enabled")
+    for config in (root / "Assets").rglob("*.rsp"):
+        if "FastScriptReload_CompileViaMCS" in config.read_text(encoding="utf-8"):
+            raise ContractError(f"{config}: unsupported MCS fallback is enabled")
+
+    result = subprocess.run(
+        ["git", "diff", "--name-only", UPSTREAM, "--", "Assets/Scripts"],
+        cwd=root, capture_output=True, text=True, check=True,
+    )
+    changed_sources = {line for line in result.stdout.splitlines() if line.endswith(".cs")}
+    if changed_sources != SOURCE_ALLOWLIST:
+        raise ContractError(
+            f"Production source delta must equal frozen six files: {sorted(changed_sources)}"
+        )

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using FastScriptReload.Editor.Compilation;
 using FastScriptReload.Editor.Compilation.ScriptGenerationOverrides;
 using FastScriptReload.Runtime;
@@ -183,9 +184,17 @@ You can always get back to this screen via:
         static void OnScriptHotReloadNoInstance() 
         { 
             Debug.Log("Reloaded - start");
-            LastInspectFileHotReloadStateError = (DynamicFileHotReloadState) HarmonyLib.AccessTools
-                .Field("FastScriptReload.Editor.FastScriptReloadWelcomeScreen:LastInspectFileHotReloadStateError")
-                .GetValue(null);
+            var field = typeof(FastScriptReloadWelcomeScreen).GetField(
+                nameof(LastInspectFileHotReloadStateError),
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (field == null)
+            {
+                throw new MissingFieldException(
+                    typeof(FastScriptReloadWelcomeScreen).FullName,
+                    nameof(LastInspectFileHotReloadStateError));
+            }
+
+            LastInspectFileHotReloadStateError = (DynamicFileHotReloadState)field.GetValue(null);
             Debug.Log("Reloaded - end");
         }
         

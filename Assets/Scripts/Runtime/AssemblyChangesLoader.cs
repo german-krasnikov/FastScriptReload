@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using HarmonyLib;
 using ImmersiveVRTools.Runtime.Common;
 using ImmersiveVRTools.Runtime.Common.Extensions;
 using ImmersiveVrToolsCommon.Runtime.Logging;

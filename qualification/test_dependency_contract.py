@@ -7,9 +7,10 @@ from dependency_contract import (
     load_inventory,
     require_sha,
     validate_inventory,
+    validate_loader_source,
     verify_candidate,
+    verify_source_candidate,
 )
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -45,6 +46,37 @@ class DependencyContractTests(unittest.TestCase):
         ] = "4.0.4.0"
         with self.assertRaisesRegex(ContractError, "unifications"):
             validate_inventory(mutant)
+
+    def test_source_candidate_satisfies_frozen_loader_contract(self) -> None:
+        verify_source_candidate(ROOT)
+
+    def test_loader_contract_rejects_mutated_frozen_terms(self) -> None:
+        source = (ROOT / "Assets/Scripts/Runtime/Polyfills.cs").read_text(
+            encoding="utf-8-sig"
+        )
+        mutations = {
+            "guid": ("494e757c92cba704db1d95279f80a30f", "0" * 32),
+            "sha": (
+                "77e6901ecc606aec66c2a972782a3779e4f50c037d2d165eb7ececdd4d8f794d",
+                "0" * 64,
+            ),
+            "mvid": (
+                "B9E6CF65-9433-482B-8860-83CFF28D0128",
+                "00000000-0000-0000-0000-000000000000",
+            ),
+            "version": ("new Version(2, 4, 2, 0)", "new Version(2, 4, 1, 0)"),
+            "type": ('"HarmonyLib.PatchTools"', '"HarmonyLib.OtherTools"'),
+            "method": ('"DetourMethod"', '"OtherMethod"'),
+            "signature": (
+                "parameters[1].ParameterType == typeof(MethodBase)",
+                "parameters[1].ParameterType == typeof(MethodInfo)",
+            ),
+        }
+        for label, (original, replacement) in mutations.items():
+            with self.subTest(label=label):
+                mutant = source.replace(original, replacement)
+                with self.assertRaisesRegex(ContractError, "loader terms"):
+                    validate_loader_source(mutant)
 
 
 if __name__ == "__main__":

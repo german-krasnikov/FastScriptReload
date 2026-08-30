@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using Memory = FastScriptReload.Runtime.Polyfills.Memory;
 
 namespace FastScriptReload.Editor.AssemblyPostProcess
 {
@@ -22,11 +23,23 @@ namespace FastScriptReload.Editor.AssemblyPostProcess
         {
             AdjustedAssemblyRoot = new DirectoryInfo(Path.Combine(Application.dataPath, "..", "Temp", "Fast Script Reload", "AdjustedDlls"));
 
-            CecilAssembly = typeof(HarmonyLib.Harmony).Assembly;
-            AssemblyDefinitionType = CecilAssembly.GetType("Mono.Cecil.AssemblyDefinition");
-            ReaderParametersType = CecilAssembly.GetType("Mono.Cecil.ReaderParameters");
-            CustomAttributeType = CecilAssembly.GetType("Mono.Cecil.CustomAttribute");
-            CustomAttributeArgumentType = CecilAssembly.GetType("Mono.Cecil.CustomAttributeArgument");
+            CecilAssembly = Memory.GetHarmonyAssembly();
+            AssemblyDefinitionType = RequireEmbeddedCecilType("Mono.Cecil.AssemblyDefinition");
+            ReaderParametersType = RequireEmbeddedCecilType("Mono.Cecil.ReaderParameters");
+            CustomAttributeType = RequireEmbeddedCecilType("Mono.Cecil.CustomAttribute");
+            CustomAttributeArgumentType = RequireEmbeddedCecilType("Mono.Cecil.CustomAttributeArgument");
+        }
+
+        private static Type RequireEmbeddedCecilType(string fullName)
+        {
+            var type = CecilAssembly.GetType(fullName, false);
+            if (type == null)
+            {
+                throw new FastScriptReload.Runtime.Polyfills.HarmonyDependencyException(
+                    $"Embedded Harmony dependency type '{fullName}' is missing.");
+            }
+
+            return type;
         }
 
         public static string CreateAssemblyWithInternalsContentsVisibleTo(Assembly changedAssembly, string visibleToAssemblyName)
