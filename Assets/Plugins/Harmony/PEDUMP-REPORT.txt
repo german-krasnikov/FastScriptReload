@@ -1,0 +1,54 @@
+Command (run once per DLL from the package checkout):
+  MONO_PATH=Assets/Plugins/Harmony/net452 pedump --verify metadata <dll>
+
+Paths in loader diagnostics are normalized to <closure>; all other output is
+preserved. Tool: Mono pedump from the Unity-host macOS environment.
+
+=== 0Harmony.dll ===
+Could not initialize class(0x02000010) HarmonyLib.Emitter due to Could not load type of field 'HarmonyLib.Emitter:il' (1) due to: Could not load file or assembly 'MonoMod.Utils, Version=25.0.11.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies. assembly:<closure>/0Harmony.dll type:Emitter member:(null)
+Could not initialize vtable of class(0x02000010) HarmonyLib.Emitter due to Could not load type of field 'HarmonyLib.Emitter:il' (1) due to: Could not load file or assembly 'MonoMod.Utils, Version=25.0.11.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies. assembly:<closure>/0Harmony.dll type:Emitter member:(null)
+Could not load class with token 2000018 due to Could not load file or assembly 'MonoMod.Utils, Version=25.0.11.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies.
+Could not initialize class(0x0200001e) HarmonyLib.MethodCreatorConfig due to Could not load type of field 'HarmonyLib.MethodCreatorConfig:patch' (10) due to: Could not load file or assembly 'MonoMod.Utils, Version=25.0.11.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies. assembly:<closure>/0Harmony.dll type:MethodCreatorConfig member:(null)
+Could not initialize vtable of class(0x0200001e) HarmonyLib.MethodCreatorConfig due to Could not load type of field 'HarmonyLib.MethodCreatorConfig:patch' (10) due to: Could not load file or assembly 'MonoMod.Utils, Version=25.0.11.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies. assembly:<closure>/0Harmony.dll type:MethodCreatorConfig member:(null)
+Could not initialize class(0x02000070) .<Apply>d__9 due to Invalid type HarmonyLib.MethodCreatorConfig for instance field HarmonyLib.Infix+<Apply>d__9:config assembly:<closure>/0Harmony.dll type:<Apply>d__9 member:(null)
+Could not initialize vtable of class(0x02000070) .<Apply>d__9 due to Invalid type HarmonyLib.MethodCreatorConfig for instance field HarmonyLib.Infix+<Apply>d__9:config assembly:<closure>/0Harmony.dll type:<Apply>d__9 member:(null)
+Could not initialize class(0x02000083) .<>c__DisplayClass12_0 due to Invalid type HarmonyLib.Emitter for instance field HarmonyLib.MethodCreatorTools+<>c__DisplayClass12_0:emitter assembly:<closure>/0Harmony.dll type:<>c__DisplayClass12_0 member:(null)
+Could not initialize vtable of class(0x02000083) .<>c__DisplayClass12_0 due to Invalid type HarmonyLib.Emitter for instance field HarmonyLib.MethodCreatorTools+<>c__DisplayClass12_0:emitter assembly:<closure>/0Harmony.dll type:<>c__DisplayClass12_0 member:(null)
+exit=5
+
+=== Mono.Cecil.Mdb.dll ===
+exit=0
+
+=== Mono.Cecil.Pdb.dll ===
+exit=0
+
+=== Mono.Cecil.Rocks.dll ===
+exit=0
+
+=== Mono.Cecil.dll ===
+exit=0
+
+=== MonoMod.Backports.dll ===
+FAIL: Invalid CustomAttribute row 26 Parent field 0x00000074
+Error count: 1
+exit=1
+
+=== MonoMod.Core.dll ===
+FAIL: Invalid CustomAttribute content row 9 Could not load ctor due to Could not load file or assembly 'MonoMod.Backports, Version=1.1.2.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies.
+Error count: 1
+exit=1
+
+=== MonoMod.ILHelpers.dll ===
+exit=0
+
+=== MonoMod.Iced.dll ===
+Could not initialize class(0x02000046) Iced.Intel.Internal.DataReader due to Could not load type of field 'Iced.Intel.Internal.DataReader:data' (0) due to: Could not load file or assembly 'MonoMod.Backports, Version=1.1.2.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies. assembly:<closure>/MonoMod.Iced.dll type:DataReader member:(null)
+Could not initialize vtable of class(0x02000046) Iced.Intel.Internal.DataReader due to Could not load type of field 'Iced.Intel.Internal.DataReader:data' (0) due to: Could not load file or assembly 'MonoMod.Backports, Version=1.1.2.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies. assembly:<closure>/MonoMod.Iced.dll type:DataReader member:(null)
+Could not initialize class(0x020001b0) Iced.Intel.DecoderInternal.TableDeserializer due to Invalid type Iced.Intel.Internal.DataReader for instance field Iced.Intel.DecoderInternal.TableDeserializer:reader assembly:<closure>/MonoMod.Iced.dll type:TableDeserializer member:(null)
+Could not initialize vtable of class(0x020001b0) Iced.Intel.DecoderInternal.TableDeserializer due to Invalid type Iced.Intel.Internal.DataReader for instance field Iced.Intel.DecoderInternal.TableDeserializer:reader assembly:<closure>/MonoMod.Iced.dll type:TableDeserializer member:(null)
+exit=5
+
+=== MonoMod.Utils.dll ===
+FAIL: Invalid method row 1136 invalid implflags field 0x00000200
+Error count: 1
+exit=1
