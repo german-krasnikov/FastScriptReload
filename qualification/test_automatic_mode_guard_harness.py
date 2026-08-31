@@ -54,6 +54,16 @@ class AutomaticModeGuardHarnessTests(unittest.TestCase):
     def test_disable_is_attempted_on_every_mode_even_after_earlier_failure(self) -> None:
         self.assertEqual(self.run_mode("no-short-circuit"), "NO-SHORT-CIRCUIT")
 
+    def test_sixth_mode_unconfirmed_blocks_and_names_it(self) -> None:
+        # The sixth mode is the welcome-initializer's first-run dialog
+        # suppression preference (forced to True, not False like the other
+        # five) -- must fail closed identically when it alone does not
+        # confirm.
+        self.assertEqual(
+            self.run_mode("sixth-unconfirmed"),
+            "REJECTED:stop-showing-auto-reload-enabled-dialog-box",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

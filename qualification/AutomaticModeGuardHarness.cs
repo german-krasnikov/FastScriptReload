@@ -27,13 +27,17 @@ internal sealed class FakeAutomaticModeSwitch : IAutomaticModeSwitch
 
 internal static class AutomaticModeGuardHarness
 {
-    private static readonly string[] FiveModeNames =
+    private static readonly string[] SixModeNames =
     {
         "enable-auto-reload-for-changed-files",
         "enable-on-demand-reload",
         "watch-only-specified",
         "enable-experimental-editor-hot-reload-support",
         "enable-custom-file-watcher",
+        // Sixth: welcome-initializer's first-run dialog suppression
+        // preference, forced to True (not False like the other five) --
+        // see BiomeFsrAutomaticModesGuard.BuildModeSwitches.
+        "stop-showing-auto-reload-enabled-dialog-box",
     };
 
     private static int Main(string[] args)
@@ -42,7 +46,7 @@ internal static class AutomaticModeGuardHarness
 
         if (mode == "all-confirmed")
         {
-            var switches = FiveModeNames.Select(n => new FakeAutomaticModeSwitch(n, true)).ToList();
+            var switches = SixModeNames.Select(n => new FakeAutomaticModeSwitch(n, true)).ToList();
             var result = AutomaticModeGuardLogic.DisableAndVerify(switches);
             if (!result.AllConfirmed) return 1;
             if (switches.Any(s => s.DisableCallCount != 1)) return 2;
@@ -52,7 +56,7 @@ internal static class AutomaticModeGuardHarness
 
         if (mode == "one-unconfirmed")
         {
-            var switches = FiveModeNames
+            var switches = SixModeNames
                 .Select((n, i) => new FakeAutomaticModeSwitch(n, everConfirms: i != 0))
                 .ToList();
             var result = AutomaticModeGuardLogic.DisableAndVerify(switches);
@@ -67,12 +71,26 @@ internal static class AutomaticModeGuardHarness
             // The first mode never confirms; every other mode must still be
             // disabled (Disable() called) even though the pass will fail
             // overall -- fail-closed must not mean "stop early".
-            var switches = FiveModeNames
+            var switches = SixModeNames
                 .Select((n, i) => new FakeAutomaticModeSwitch(n, everConfirms: i != 0))
                 .ToList();
             AutomaticModeGuardLogic.DisableAndVerify(switches);
             if (switches.Any(s => s.DisableCallCount != 1)) return 5;
             Console.WriteLine("NO-SHORT-CIRCUIT");
+            return 0;
+        }
+
+        if (mode == "sixth-unconfirmed")
+        {
+            // Only the sixth (dialog-suppression) mode fails to confirm;
+            // the other five confirm normally.
+            var switches = SixModeNames
+                .Select((n, i) => new FakeAutomaticModeSwitch(n, everConfirms: i != SixModeNames.Length - 1))
+                .ToList();
+            var result = AutomaticModeGuardLogic.DisableAndVerify(switches);
+            if (result.AllConfirmed) return 6;
+            if (result.UnconfirmedModes.Count != 1) return 7;
+            Console.WriteLine("REJECTED:" + result.UnconfirmedModes[0]);
             return 0;
         }
 
